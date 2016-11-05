@@ -2,6 +2,7 @@ package com.talview.sqlitepersistentqueue;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
 
 import com.talview.sqlitepersistentqueue.db.SQLiteQueueDbHelper;
 import com.talview.sqlitepersistentqueue.db.SQLiteQueueTableManager;
@@ -29,6 +30,13 @@ public class SQLitePersistentQueue<E> implements Queue<E>, Closeable {
         Context mAppContext = context.getApplicationContext();
         mConverter = objectConverter;
         mDbManager = new SQLiteQueueTableManager(new SQLiteQueueDbHelper(mAppContext));
+        mQueueEventBus = new SQLitePersistentQueueBus<>();
+    }
+
+    @VisibleForTesting
+    SQLitePersistentQueue(@NonNull QueueObjectConverter<E> objectConverter, @NonNull SQLiteQueueTableManager manager) {
+        mConverter = objectConverter;
+        mDbManager = manager;
         mQueueEventBus = new SQLitePersistentQueueBus<>();
     }
 

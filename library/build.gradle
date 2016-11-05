@@ -41,4 +41,7 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:24.2.1'
     testCompile 'junit:junit:4.12'
+    androidTestCompile "com.crittercism.dexmaker:dexmaker:1.4"
+    androidTestCompile "com.crittercism.dexmaker:dexmaker-dx:1.4"
+    androidTestCompile "com.crittercism.dexmaker:dexmaker-mockito:1.4"
 }

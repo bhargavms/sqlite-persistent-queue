@@ -1,17 +1,20 @@
 package com.talview.sqlitepersistentqueue;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.talview.sqlitepersistentqueue.db.SQLiteQueueDbHelper;
+import com.talview.sqlitepersistentqueue.db.SQLiteQueueTableManager;
 import com.talview.sqlitepersistentqueue.db.sqlite_queue_contract.SQLiteQueueTable;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -108,7 +111,7 @@ public class SQLitePersistentQueueTest {
 
     @Test
     public void testIterator_WhenQueueEmpty() {
-        for (String item: queue) {
+        for (String ignored : queue) {
             fail("Must not enter this block since queue is empty");
         }
     }
@@ -150,6 +153,13 @@ public class SQLitePersistentQueueTest {
         assertFalse(queue.contains(itemThatDoesntExist));
     }
 
+    @SuppressLint("UseValueOf")
+    @Test
+    public void testContains_returnFalseWhenSerializationFails() {
+        //noinspection UnnecessaryBoxing,SuspiciousMethodCalls
+        assertFalse(queue.contains(new Integer(5)));
+    }
+
     @Test
     public void testAdd_addsItemToList() {
         String itemToAdd = "13245";
@@ -169,6 +179,13 @@ public class SQLitePersistentQueueTest {
         assertTrue(queue.add(itemToRemoveAndAdd));
         assertTrue(queue.remove(itemToRemoveAndAdd));
         assertFalse(queue.contains(itemToRemoveAndAdd));
+    }
+
+    @Test
+    public void testRemove_itemNotInList_returnFalse() {
+        String itemToRemove = "asdasd";
+        queue.addAll(createListForTest());
+        assertFalse(queue.remove(itemToRemove));
     }
 
     @Test
@@ -207,14 +224,19 @@ public class SQLitePersistentQueueTest {
     }
 
     @Test
-    public void poll_ReturnsAndRemovesTheHeadOfQueue() {
+    public void testPoll_ReturnsAndRemovesTheHeadOfQueue() {
         queue.addAll(createListForTest());
         assertEquals(value1(), queue.poll());
         assertFalse(queue.contains(value1()));
     }
 
     @Test
-    public void peek_ReturnsHeadOfQueue() {
+    public void testPoll_emptyQueue_mustReturnNull() {
+        assertNull(queue.poll());
+    }
+
+    @Test
+    public void testPeek_ReturnsHeadOfQueue() {
         queue.addAll(createListForTest());
         assertEquals(value1(), queue.peek());
     }
@@ -277,6 +299,119 @@ public class SQLitePersistentQueueTest {
         unsubscribe();
         assertFalse(queue.getEventBus().hasSubscribers());
     }
+
+    @Test
+    public void testToArray_MustReturnArrayOfItemsInQueue() {
+        queue.addAll(createListForTest());
+        String[] a = queue.toArray(new String[0]);
+        assertEquals(a[0], value1());
+        assertEquals(a[1], value2());
+        assertEquals(a[2], value3());
+    }
+
+    @Test
+    public void testToArrayWithoutRunTimeType_MustReturnArrayOfItemsInQueue() {
+        queue.addAll(createListForTest());
+        Object[] a = queue.toArray();
+        assertEquals(a[0], value1());
+        assertEquals(a[1], value2());
+        assertEquals(a[2], value3());
+    }
+
+    @Test
+    public void testToArrayWithLargeArraySupplied() {
+        queue.addAll(createListForTest());
+        String[] a = queue.toArray(new String[5]);
+        assertEquals(a[0], value1());
+        assertEquals(a[1], value2());
+        assertEquals(a[2], value3());
+        assertNull(a[3]);
+        assertNull(a[4]);
+    }
+
+    @Test
+    public void testToArray_WhenSizeMethodReturnsLessThanActualSize() throws IOException {
+        SQLiteQueueTableManager spyManager = Mockito.spy(new SQLiteQueueTableManager(
+                new SQLiteQueueDbHelper(InstrumentationRegistry.getTargetContext())
+        ));
+        Mockito.when(spyManager.getCount()).thenReturn(2);
+        SQLitePersistentQueue<String> spiedQueue = new SQLitePersistentQueue<>(mConverter, spyManager);
+        spiedQueue.addAll(createListForTest());
+        Object[] a = spiedQueue.toArray();
+        assertEquals(a[0], value1());
+        assertEquals(a[1], value2());
+        assertEquals(a[2], value3());
+        spiedQueue.clear();
+        spiedQueue.close();
+    }
+
+    @Test
+    public void testToArrayWithRunTimeType_WhenSizeMethodReturnsLessThanActualSize() throws IOException {
+        SQLiteQueueTableManager spyManager = Mockito.spy(new SQLiteQueueTableManager(
+                new SQLiteQueueDbHelper(InstrumentationRegistry.getTargetContext())
+        ));
+        Mockito.when(spyManager.getCount()).thenReturn(2);
+        SQLitePersistentQueue<String> spiedQueue = new SQLitePersistentQueue<>(mConverter, spyManager);
+        spiedQueue.addAll(createListForTest());
+        String[] a = spiedQueue.toArray(new String[0]);
+        assertEquals(a[0], value1());
+        assertEquals(a[1], value2());
+        assertEquals(a[2], value3());
+        spiedQueue.clear();
+        spiedQueue.close();
+    }
+
+    @Test
+    public void testRetainAll_MustRetainOnlyDesiredElements() {
+        queue.addAll(createListForTest());
+        List<String> desiredElements = new ArrayList<>(3);
+        desiredElements.add("desiredElement1");
+        desiredElements.add("desiredElement2");
+        desiredElements.add("desiredElement3");
+        queue.retainAll(desiredElements);
+        assertFalse(queue.contains(value1()));
+        assertFalse(queue.contains(value2()));
+        assertFalse(queue.contains(value3()));
+
+        assertTrue(queue.contains("desiredElement1"));
+        assertTrue(queue.contains("desiredElement2"));
+        assertTrue(queue.contains("desiredElement3"));
+    }
+
+    @Test
+    public void testRemove() {
+        queue.addAll(createListForTest());
+        // assert removed item is head
+        assertEquals(queue.remove(), value1());
+        // assert queue doesnt contain that item.
+        assertFalse(queue.contains(value1()));
+    }
+
+    @Test
+    public void testRemove_emptyQueue_mustThrow() {
+        try {
+            queue.remove();
+            fail("Must throw when queue is empty and remove() is called");
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    @Test
+    public void testElement_emptyQueue_mustThrow() {
+        try {
+            queue.element();
+            fail("Must throw when queue is empty and element() is called");
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    @Test
+    public void testElement_nonEmptyQueue_mustReturnHeadAndNotRemove() {
+        queue.addAll(createListForTest());
+        assertEquals(queue.element(), value1());
+        assertTrue(queue.contains(value1()));
+    }
+
 
     private void subscribe() {
         queue.getEventBus().subscribe(mSubscriber);
