@@ -28,4 +28,4 @@ android:
     - sys-img-armeabi-v7a-android-22
 
 script:
-    - ./gradlew clean createDebugAndroidTestCoverageReport coveralls
+    - ./gradlew connectedAndroidTest coveralls

@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.github.kt3k.coveralls'
 
 android {
     compileSdkVersion 24
@@ -20,6 +21,14 @@ android {
             testCoverageEnabled true
         }
     }
+}
+
+coveralls {
+    jacocoReportPath = "${buildDir}/reports/coverage/debug/report.xml"
+}
+
+tasks.coveralls {
+    dependsOn 'connectedAndroidTest'
 }
 
 dependencies {
