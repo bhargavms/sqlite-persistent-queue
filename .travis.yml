@@ -1,0 +1,31 @@
+language: android
+
+jdk: oraclejdk7
+
+env:
+  matrix:
+    - ANDROID_TARGET=android-22 ANDROID_ABI=armeabi-v7a
+
+notifications:
+    email:
+      - bhargav521@gmail.com
+
+before_script:
+    - echo no | android create avd --force -n test -t $ANDROID_TARGET --abi $ANDROID_ABI
+    - emulator -avd test -no-skin -no-audio -no-window &
+    - android-wait-for-emulator
+    - adb shell input keyevent 82 &
+
+android:
+  components:
+    - tools # to get the new `repository-11.xml`
+    - tools # to install Android SDK tools 25.1.x (x = 6 right now)
+    - platform-tools
+    - build-tools-24.0.3
+    - android-22
+    - android-24
+    - extra-android-m2repository
+    - sys-img-armeabi-v7a-android-22
+
+script:
+    - ./gradlew clean createDebugAndroidTestCoverageReport coveralls
