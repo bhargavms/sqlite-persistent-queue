@@ -23,6 +23,26 @@
    in your Application class, and retrieve this wherever you want. Also **DO NOT** forget to call `close()`
    to close the connection to the Database once you are finished using the Queue.
 
+## Getting started
+
+Add to your project level `build.gradle`'s `allprojects` block like this
+```groovy
+allprojects {
+    repositories {
+        maven { url "https://jitpack.io" }
+    }
+}
+```
+Next add to your module level (app) `build.gradle`'s dependencies block like this
+
+```groovy
+dependencies {
+    compile 'com.github.bhargavms:sqlite-persistent-queue:1.0.0'
+}
+```
+
+You're all set, Now you can start using the `SQLitePersistentQueue` class.
+
 ## How to use
 
  You need to implement the `QueueObjectConverter<T>` class (T is the type of the object you are storing in the Queue) **to decide how you want to serialize/deserialize objects** as objects are converted to strings before being saved in the database.
